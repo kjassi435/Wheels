@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
+import { getDirectImageUrl } from "@/lib/utils";
 
 const cartImages = [
   { id: "1s6o6ZMb40xpKHgGpoyHz0h4D4t322n5h", alt: "Cart Update 1" },
@@ -10,8 +11,8 @@ const cartImages = [
   { id: "1u0YhjwAdBXeudi9dZB_sJTr20ze6CK4F", alt: "Cart Update 5" },
 ];
 
-function getDirectImageUrl(fileId: string) {
-  return `https://drive.google.com/uc?export=view&id=${fileId}`;
+function getImageUrl(fileId: string) {
+  return getDirectImageUrl(`https://drive.google.com/file/d/${fileId}/view`);
 }
 
 export function NewCartsUpdates() {
@@ -116,7 +117,7 @@ export function NewCartsUpdates() {
           >
             <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
               <img
-                src={getDirectImageUrl(img.id)}
+                src={getImageUrl(img.id)}
                 alt={img.alt}
                 className="w-full h-full object-cover"
                 draggable={false}

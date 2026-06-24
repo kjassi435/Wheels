@@ -106,18 +106,6 @@ export function ImageCarousel() {
 
   return (
     <section className="py-12 lg:py-16 bg-cream-50 overflow-hidden">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 mb-10">
-        <div className="text-center max-w-3xl mx-auto">
-          <span className="text-sm font-semibold tracking-[0.2em] uppercase text-brand-400">
-            Our Product Range
-          </span>
-          <h2 className="text-4xl md:text-5xl font-display font-bold text-brand-900 mt-4 leading-tight">
-            Crafted for Every<br />Mobile Business
-          </h2>
-          <div className="divider mx-auto mt-6" />
-        </div>
-      </div>
-
       <div
         ref={scrollRef}
         className="flex gap-6 overflow-x-auto scrollbar-hide px-6 lg:px-8 cursor-grab active:cursor-grabbing"

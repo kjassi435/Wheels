@@ -1,4 +1,5 @@
 import { HeroSection } from "@/components/home/HeroSection";
+import { ProductSegments } from "@/components/home/ProductSegments";
 import { ImageCarousel } from "@/components/home/ImageCarousel";
 import { AboutSection } from "@/components/home/AboutSection";
 import { StatsSection } from "@/components/home/StatsSection";
@@ -10,6 +11,7 @@ export default function HomePage() {
   return (
     <>
       <HeroSection />
+      <ProductSegments />
       <ImageCarousel />
       <AboutSection />
       <StatsSection />

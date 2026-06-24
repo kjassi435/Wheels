@@ -19,67 +19,151 @@ export function NewCartsUpdates() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const dragStartX = useRef(0);
   const scrollStartX = useRef(0);
+  const velocityRef = useRef(0);
+  const lastXRef = useRef(0);
+  const lastTimeRef = useRef(0);
+  const animationFrameRef = useRef<number | null>(null);
 
-  const scrollToNext = useCallback(() => {
+  const smoothScroll = useCallback((target: number, duration: number = 500) => {
     if (!scrollRef.current) return;
     const container = scrollRef.current;
-    const cardWidth = container.children[0]?.getBoundingClientRect().width || 0;
-    const gap = 24;
-    const scrollAmount = cardWidth + gap;
+    const start = container.scrollLeft;
+    const distance = target - start;
+    const startTime = performance.now();
 
-    if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 10) {
-      container.scrollTo({ left: 0, behavior: "smooth" });
-    } else {
-      container.scrollBy({ left: scrollAmount, behavior: "smooth" });
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = easeOutCubic(progress);
+
+      container.scrollLeft = start + distance * eased;
+
+      if (progress < 1) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
     }
+    animationFrameRef.current = requestAnimationFrame(animate);
   }, []);
 
+  const scrollToNext = useCallback(() => {
+    if (!scrollRef.current || isDragging) return;
+    const container = scrollRef.current;
+    const cardWidth = container.children[0]?.getBoundingClientRect().width || 0;
+    const gap = 32;
+    const scrollAmount = cardWidth + gap;
+
+    if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 50) {
+      smoothScroll(0, 800);
+    } else {
+      smoothScroll(container.scrollLeft + scrollAmount, 600);
+    }
+  }, [isDragging, smoothScroll]);
+
   useEffect(() => {
-    autoPlayRef.current = setInterval(scrollToNext, 3000);
+    if (!isHovered) {
+      autoPlayRef.current = setInterval(scrollToNext, 3500);
+    }
     return () => {
       if (autoPlayRef.current) clearInterval(autoPlayRef.current);
     };
-  }, [scrollToNext]);
+  }, [scrollToNext, isHovered]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
     dragStartX.current = e.clientX;
     scrollStartX.current = scrollRef.current?.scrollLeft || 0;
+    lastXRef.current = e.clientX;
+    lastTimeRef.current = performance.now();
+    velocityRef.current = 0;
     if (autoPlayRef.current) clearInterval(autoPlayRef.current);
+    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging || !scrollRef.current) return;
+    const currentTime = performance.now();
+    const timeDelta = currentTime - lastTimeRef.current;
+    
+    if (timeDelta > 0) {
+      velocityRef.current = (lastXRef.current - e.clientX) / timeDelta;
+    }
+    
+    lastXRef.current = e.clientX;
+    lastTimeRef.current = currentTime;
+
     const diff = dragStartX.current - e.clientX;
     scrollRef.current.scrollLeft = scrollStartX.current + diff;
   };
 
   const handleMouseUp = () => {
+    if (!isDragging || !scrollRef.current) return;
     setIsDragging(false);
-    autoPlayRef.current = setInterval(scrollToNext, 3000);
+    
+    const momentum = velocityRef.current * 150;
+    const targetScroll = scrollRef.current.scrollLeft + momentum;
+    smoothScroll(targetScroll, 400);
+    
+    if (!isHovered) {
+      autoPlayRef.current = setInterval(scrollToNext, 3500);
+    }
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
     dragStartX.current = e.touches[0].clientX;
     scrollStartX.current = scrollRef.current?.scrollLeft || 0;
+    lastXRef.current = e.touches[0].clientX;
+    lastTimeRef.current = performance.now();
+    velocityRef.current = 0;
     if (autoPlayRef.current) clearInterval(autoPlayRef.current);
+    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!scrollRef.current) return;
+    const currentTime = performance.now();
+    const timeDelta = currentTime - lastTimeRef.current;
+    
+    if (timeDelta > 0) {
+      velocityRef.current = (lastXRef.current - e.touches[0].clientX) / timeDelta;
+    }
+    
+    lastXRef.current = e.touches[0].clientX;
+    lastTimeRef.current = currentTime;
+
     const diff = dragStartX.current - e.touches[0].clientX;
     scrollRef.current.scrollLeft = scrollStartX.current + diff;
   };
 
   const handleTouchEnd = () => {
-    autoPlayRef.current = setInterval(scrollToNext, 3000);
+    if (!scrollRef.current) return;
+    const momentum = velocityRef.current * 150;
+    const targetScroll = scrollRef.current.scrollLeft + momentum;
+    smoothScroll(targetScroll, 400);
+    
+    if (!isHovered) {
+      autoPlayRef.current = setInterval(scrollToNext, 3500);
+    }
   };
 
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      if (autoPlayRef.current) clearInterval(autoPlayRef.current);
+    };
+  }, []);
+
   return (
-    <section className="py-16 lg:py-24 bg-white overflow-hidden">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 mb-10">
+    <section className="py-20 lg:py-28 bg-gradient-to-b from-cream-50 to-white overflow-hidden">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 mb-12">
         <div className="text-center max-w-3xl mx-auto">
           <span className="text-sm font-semibold tracking-[0.2em] uppercase text-brand-400">
             Latest Updates
@@ -93,10 +177,11 @@ export function NewCartsUpdates() {
 
       <div
         ref={scrollRef}
-        className="flex gap-6 overflow-x-auto scrollbar-hide px-6 lg:px-8 cursor-grab active:cursor-grabbing"
+        className="flex gap-8 overflow-x-auto scrollbar-hide px-6 lg:px-8 pb-8 cursor-grab active:cursor-grabbing"
         style={{
-          scrollSnapType: "x mandatory",
+          scrollBehavior: "smooth",
           WebkitOverflowScrolling: "touch",
+          perspective: "1200px",
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -105,24 +190,48 @@ export function NewCartsUpdates() {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeaveCapture={() => setIsHovered(false)}
       >
-        {cartImages.map((img) => (
+        {cartImages.map((img, index) => (
           <div
             key={img.id}
-            className="flex-shrink-0 scroll-snap-align-center"
+            className="flex-shrink-0 group"
             style={{
-              width: "clamp(280px, 30vw, 360px)",
-              aspectRatio: "1080 / 1350",
+              width: "clamp(300px, 32vw, 380px)",
             }}
           >
-            <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
+            <div
+              className="relative w-full overflow-hidden rounded-3xl transition-all duration-500 ease-out"
+              style={{
+                aspectRatio: "1080 / 1350",
+                transformStyle: "preserve-3d",
+                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1)",
+              }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              
               <img
                 src={getImageUrl(img.id)}
                 alt={img.alt}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                 draggable={false}
               />
+
+              <div
+                className="absolute inset-0 z-20 opacity-0 group-hover:opacity-100 transition-all duration-500"
+                style={{
+                  background: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.4) 100%)",
+                }}
+              />
             </div>
+
+            <div
+              className="absolute -inset-1 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10 blur-xl"
+              style={{
+                background: "linear-gradient(135deg, rgba(251, 146, 60, 0.3), rgba(245, 158, 11, 0.3))",
+              }}
+            />
           </div>
         ))}
       </div>
@@ -135,8 +244,8 @@ export function NewCartsUpdates() {
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
-        .scroll-snap-align-center {
-          scroll-snap-align: center;
+        .group:hover {
+          transform: translateZ(20px) rotateX(2deg);
         }
       `}</style>
     </section>

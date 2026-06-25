@@ -29,6 +29,7 @@ const sidebarLinks = [
   { href: "/admin/contacts", label: "Messages", icon: MessageSquare },
   { href: "/admin/cms/settings", label: "Site Settings", icon: Settings },
   { href: "/admin/cms/carousel", label: "Carousel Cards", icon: Images },
+  { href: "/admin/cms/cart-updates", label: "Cart Updates", icon: Rocket },
   { href: "/admin/cms/launches", label: "Future Launches", icon: Rocket },
   { href: "/admin/customers", label: "Customers", icon: Users },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },

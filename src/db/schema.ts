@@ -292,3 +292,19 @@ export const futureLaunches = sqliteTable("future_launches", {
     .notNull()
     .$defaultFn(() => new Date()),
 });
+
+// CMS: Cart Updates (New Carts Updates section)
+export const cartUpdates = sqliteTable("cart_updates", {
+  id: text("id").primaryKey(),
+  imageUrl: text("image_url").notNull(),
+  title: text("title"),
+  linkUrl: text("link_url"),
+  sortOrder: integer("sort_order").default(0),
+  isActive: integer("is_active", { mode: "boolean" }).default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});

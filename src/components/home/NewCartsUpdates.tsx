@@ -2,8 +2,18 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import { getDirectImageUrl } from "@/lib/utils";
+import Link from "next/link";
 
-const cartImages = [
+interface CartUpdate {
+  id: string;
+  imageUrl: string;
+  title: string | null;
+  linkUrl: string | null;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+const fallbackImages = [
   { id: "1s6o6ZMb40xpKHgGpoyHz0h4D4t322n5h", alt: "Cart Update 1" },
   { id: "1NZynhjRnhTSUAzQUjtLNrLout68fAD29", alt: "Cart Update 2" },
   { id: "1NSoyj4SXU406i3KJzvL0IE4vwByB9Puz", alt: "Cart Update 3" },
@@ -11,21 +21,30 @@ const cartImages = [
   { id: "1u0YhjwAdBXeudi9dZB_sJTr20ze6CK4F", alt: "Cart Update 5" },
 ];
 
-function getImageUrl(fileId: string) {
-  return getDirectImageUrl(`https://drive.google.com/file/d/${fileId}/view`);
-}
-
 export function NewCartsUpdates() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [updates, setUpdates] = useState<CartUpdate[]>([]);
   const dragStartX = useRef(0);
   const scrollStartX = useRef(0);
   const velocityRef = useRef(0);
   const lastXRef = useRef(0);
   const lastTimeRef = useRef(0);
   const animationFrameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    fetch("/api/cms/cart-updates")
+      .then((r) => r.json())
+      .then((data: CartUpdate[]) => {
+        const active = data.filter((u) => u.isActive);
+        if (active.length > 0) {
+          setUpdates(active.sort((a, b) => a.sortOrder - b.sortOrder));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const smoothScroll = useCallback((target: number, duration: number = 500) => {
     if (!scrollRef.current) return;
@@ -69,13 +88,13 @@ export function NewCartsUpdates() {
   }, [isDragging, smoothScroll]);
 
   useEffect(() => {
-    if (!isHovered) {
+    if (!isHovered && updates.length > 0) {
       autoPlayRef.current = setInterval(scrollToNext, 3500);
     }
     return () => {
       if (autoPlayRef.current) clearInterval(autoPlayRef.current);
     };
-  }, [scrollToNext, isHovered]);
+  }, [scrollToNext, isHovered, updates.length]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
@@ -92,11 +111,11 @@ export function NewCartsUpdates() {
     if (!isDragging || !scrollRef.current) return;
     const currentTime = performance.now();
     const timeDelta = currentTime - lastTimeRef.current;
-    
+
     if (timeDelta > 0) {
       velocityRef.current = (lastXRef.current - e.clientX) / timeDelta;
     }
-    
+
     lastXRef.current = e.clientX;
     lastTimeRef.current = currentTime;
 
@@ -107,11 +126,11 @@ export function NewCartsUpdates() {
   const handleMouseUp = () => {
     if (!isDragging || !scrollRef.current) return;
     setIsDragging(false);
-    
+
     const momentum = velocityRef.current * 150;
     const targetScroll = scrollRef.current.scrollLeft + momentum;
     smoothScroll(targetScroll, 400);
-    
+
     if (!isHovered) {
       autoPlayRef.current = setInterval(scrollToNext, 3500);
     }
@@ -131,11 +150,11 @@ export function NewCartsUpdates() {
     if (!scrollRef.current) return;
     const currentTime = performance.now();
     const timeDelta = currentTime - lastTimeRef.current;
-    
+
     if (timeDelta > 0) {
       velocityRef.current = (lastXRef.current - e.touches[0].clientX) / timeDelta;
     }
-    
+
     lastXRef.current = e.touches[0].clientX;
     lastTimeRef.current = currentTime;
 
@@ -148,7 +167,7 @@ export function NewCartsUpdates() {
     const momentum = velocityRef.current * 150;
     const targetScroll = scrollRef.current.scrollLeft + momentum;
     smoothScroll(targetScroll, 400);
-    
+
     if (!isHovered) {
       autoPlayRef.current = setInterval(scrollToNext, 3500);
     }
@@ -160,6 +179,10 @@ export function NewCartsUpdates() {
       if (autoPlayRef.current) clearInterval(autoPlayRef.current);
     };
   }, []);
+
+  if (updates.length === 0) {
+    return null;
+  }
 
   return (
     <section className="py-20 lg:py-28 bg-gradient-to-b from-cream-50 to-white overflow-hidden">
@@ -193,47 +216,54 @@ export function NewCartsUpdates() {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeaveCapture={() => setIsHovered(false)}
       >
-        {cartImages.map((img, index) => (
-          <div
-            key={img.id}
-            className="flex-shrink-0 group"
-            style={{
-              width: "clamp(300px, 32vw, 380px)",
-            }}
-          >
+        {updates.map((update) => {
+          const content = (
             <div
-              className="relative w-full overflow-hidden rounded-3xl transition-all duration-500 ease-out"
-              style={{
-                aspectRatio: "1080 / 1350",
-                transformStyle: "preserve-3d",
-                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1)",
-              }}
+              className="flex-shrink-0 group"
+              style={{ width: "clamp(300px, 32vw, 380px)" }}
             >
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              <img
-                src={getImageUrl(img.id)}
-                alt={img.alt}
-                className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                draggable={false}
-              />
+              <div
+                className="relative w-full overflow-hidden rounded-3xl transition-all duration-500 ease-out"
+                style={{
+                  aspectRatio: "1080 / 1350",
+                  transformStyle: "preserve-3d",
+                  boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1)",
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                <img
+                  src={getDirectImageUrl(update.imageUrl)}
+                  alt={update.title || "Cart Update"}
+                  className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                  draggable={false}
+                />
+
+                <div
+                  className="absolute inset-0 z-20 opacity-0 group-hover:opacity-100 transition-all duration-500"
+                  style={{
+                    background: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.4) 100%)",
+                  }}
+                />
+              </div>
 
               <div
-                className="absolute inset-0 z-20 opacity-0 group-hover:opacity-100 transition-all duration-500"
+                className="absolute -inset-1 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10 blur-xl"
                 style={{
-                  background: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.4) 100%)",
+                  background: "linear-gradient(135deg, rgba(251, 146, 60, 0.3), rgba(245, 158, 11, 0.3))",
                 }}
               />
             </div>
+          );
 
-            <div
-              className="absolute -inset-1 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10 blur-xl"
-              style={{
-                background: "linear-gradient(135deg, rgba(251, 146, 60, 0.3), rgba(245, 158, 11, 0.3))",
-              }}
-            />
-          </div>
-        ))}
+          return update.linkUrl ? (
+            <Link key={update.id} href={update.linkUrl}>
+              {content}
+            </Link>
+          ) : (
+            <div key={update.id}>{content}</div>
+          );
+        })}
       </div>
 
       <style jsx>{`

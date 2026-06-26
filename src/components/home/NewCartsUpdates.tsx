@@ -209,12 +209,11 @@ export function NewCartsUpdates() {
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onMouseLeave={() => { handleMouseUp(); setIsHovered(false); }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
         {updates.map((update) => {
           const content = (

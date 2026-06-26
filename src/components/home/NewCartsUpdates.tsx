@@ -180,9 +180,11 @@ export function NewCartsUpdates() {
     };
   }, []);
 
-  if (updates.length === 0) {
+  if (updates.length === 0 && fallbackImages.length === 0) {
     return null;
   }
+
+  const displayImages = updates.length > 0 ? updates : fallbackImages;
 
   return (
     <section className="py-20 lg:py-28 bg-gradient-to-b from-cream-50 to-white overflow-hidden">
@@ -215,7 +217,12 @@ export function NewCartsUpdates() {
         onTouchEnd={handleTouchEnd}
         onMouseEnter={() => setIsHovered(true)}
       >
-        {updates.map((update) => {
+        {displayImages.map((item) => {
+          const isDbItem = 'imageUrl' in item;
+          const imageUrl = isDbItem ? getDirectImageUrl(item.imageUrl) : getDirectImageUrl(`https://drive.google.com/file/d/${item.id}/view`);
+          const altText = isDbItem ? (item.title || "Cart Update") : item.alt;
+          const linkUrl = isDbItem ? item.linkUrl : null;
+
           const content = (
             <div
               className="flex-shrink-0 group"
@@ -232,8 +239,8 @@ export function NewCartsUpdates() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                 <img
-                  src={getDirectImageUrl(update.imageUrl)}
-                  alt={update.title || "Cart Update"}
+                  src={imageUrl}
+                  alt={altText}
                   className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                   draggable={false}
                 />
@@ -255,12 +262,12 @@ export function NewCartsUpdates() {
             </div>
           );
 
-          return update.linkUrl ? (
-            <Link key={update.id} href={update.linkUrl}>
+          return linkUrl ? (
+            <Link key={isDbItem ? item.id : item.id} href={linkUrl}>
               {content}
             </Link>
           ) : (
-            <div key={update.id}>{content}</div>
+            <div key={isDbItem ? item.id : item.id}>{content}</div>
           );
         })}
       </div>

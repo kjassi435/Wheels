@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Pencil, Trash2, CheckCircle, ImageOff, Plus } from "lucide-react";
+import { Pencil, Trash2, CheckCircle, ImageOff, Plus, Database } from "lucide-react";
 import { getDirectImageUrl } from "@/lib/utils";
 
 interface CartUpdate {
@@ -21,6 +21,7 @@ export default function CartUpdatesPage() {
   const [editing, setEditing] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [initializing, setInitializing] = useState(false);
   const [form, setForm] = useState({ imageUrl: "", title: "", linkUrl: "" });
 
   useEffect(() => {
@@ -31,6 +32,25 @@ export default function CartUpdatesPage() {
         setLoading(false);
       });
   }, []);
+
+  async function handleInitialize() {
+    setInitializing(true);
+    try {
+      const res = await fetch("/api/cms/cart-updates/seed", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        // Reload the data
+        const reload = await fetch("/api/cms/cart-updates");
+        const reloaded = await reload.json();
+        setUpdates(reloaded);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
+    } catch (error) {
+      console.error("Failed to initialize:", error);
+    }
+    setInitializing(false);
+  }
 
   async function handleCreate() {
     if (!form.imageUrl) return;
@@ -100,6 +120,21 @@ export default function CartUpdatesPage() {
       {saved && (
         <div className="mb-4 flex items-center gap-2 text-green-600 bg-green-50 rounded-xl px-4 py-2 text-sm">
           <CheckCircle className="h-4 w-4" /> Saved successfully
+        </div>
+      )}
+
+      {updates.length === 0 && !creating && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 mb-4 text-center">
+          <Database className="h-10 w-10 text-amber-500 mx-auto mb-3" />
+          <h3 className="font-semibold text-amber-800 mb-2">No images yet</h3>
+          <p className="text-amber-700 text-sm mb-4">Click below to add the default cart images</p>
+          <Button
+            onClick={handleInitialize}
+            disabled={initializing}
+            className="bg-amber-600 hover:bg-amber-700 text-white"
+          >
+            {initializing ? "Initializing..." : "Load Default Images"}
+          </Button>
         </div>
       )}
 

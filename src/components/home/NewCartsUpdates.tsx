@@ -214,7 +214,7 @@ export function NewCartsUpdates() {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onMouseEnter={() => setIsHovered(true)}
-        onMouseLeaveCapture={() => setIsHovered(false)}
+        onMouseLeave={() => setIsHovered(false)}
       >
         {updates.map((update) => {
           const content = (
